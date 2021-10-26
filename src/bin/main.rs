@@ -13,7 +13,9 @@ fn main() {
         return;
     }
 
-    let day: u8 = args[1].parse::<u8>().expect("First argument must be a day number");
+    let day: u8 = args[1]
+        .parse::<u8>()
+        .expect("First argument must be a day number");
 
     let args = &args[2..];
 

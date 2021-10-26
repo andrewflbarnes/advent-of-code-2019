@@ -15,10 +15,13 @@ pub fn solve(input1: String, _: String, _: &[String]) {
     for noun in 0..=255 {
         for verb in 0..=255 {
             if 19690720 == run_with(&program, (noun, verb)) {
-                println!("Program execution ended with program code: {}", noun * 100 + verb);
+                println!(
+                    "Program execution ended with program code: {}",
+                    noun * 100 + verb
+                );
             }
-        }  
-    }    
+        }
+    }
 }
 
 fn run_with(program: &Vec<i32>, init: (i32, i32)) -> i32 {

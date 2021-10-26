@@ -19,12 +19,14 @@ impl Computer {
 
     pub fn run(&mut self) -> i32 {
         loop {
-            let (opcode, a, b , c) = self.get_args();
+            let (opcode, a, b, c) = self.get_args();
 
             match opcode {
-                ops::ADD|ops::MUL => if !self.mem_safe(a) || !self.mem_safe(b) || !self.mem_safe(c) {
-                    return -1
-                },
+                ops::ADD | ops::MUL => {
+                    if !self.mem_safe(a) || !self.mem_safe(b) || !self.mem_safe(c) {
+                        return -1;
+                    }
+                }
                 _ => {}
             }
 
@@ -32,20 +34,25 @@ impl Computer {
                 ops::ADD => self.set_mem(c, self.get_mem(a) + self.get_mem(b)),
                 ops::MUL => self.set_mem(c, self.get_mem(a) * self.get_mem(b)),
                 ops::HALT => return self.program[0],
-                _ => panic!("Invalid opcode found: {}", opcode)
+                _ => panic!("Invalid opcode found: {}", opcode),
             };
 
             match opcode {
-                ops::ADD|ops::MUL => self.position += 4,
-                _ => panic!("Invalid opcode found: {}", opcode)
+                ops::ADD | ops::MUL => self.position += 4,
+                _ => panic!("Invalid opcode found: {}", opcode),
             }
         }
     }
 
     fn get_args(&self) -> (i32, i32, i32, i32) {
-        return (self.safe_vec_get(0), self.safe_vec_get(1), self.safe_vec_get(2), self.safe_vec_get(3))
+        return (
+            self.safe_vec_get(0),
+            self.safe_vec_get(1),
+            self.safe_vec_get(2),
+            self.safe_vec_get(3),
+        );
     }
-    
+
     fn mem_safe(&self, offset: i32) -> bool {
         self.program.len() > (offset as usize)
     }

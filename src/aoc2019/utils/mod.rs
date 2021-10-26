@@ -6,4 +6,4 @@ pub fn read_file_lines<'a>(path: &str) -> Vec<String> {
         .lines()
         .map(|l| l.to_string())
         .collect::<Vec<String>>()
-} 
+}
