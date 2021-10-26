@@ -1,4 +1,4 @@
-use aoc2019::solutions::{d1, d2};
+use aoc2019::solutions::{d1, d2, d3};
 use std::env;
 
 fn main() {
@@ -27,6 +27,7 @@ fn get_solution(day: u8) -> Option<fn(String, String, &[String])> {
     let exec = match day {
         1 => d1,
         2 => d2,
+        3 => d3,
         _ => return None,
     };
 
