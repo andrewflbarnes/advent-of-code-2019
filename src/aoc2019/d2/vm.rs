@@ -17,16 +17,21 @@ impl Computer {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> i32 {
         loop {
             let (opcode, a, b , c) = self.get_args();
+
+            match opcode {
+                ops::ADD|ops::MUL => if !self.mem_safe(a) || !self.mem_safe(b) || !self.mem_safe(c) {
+                    return -1
+                },
+                _ => {}
+            }
+
             match opcode {
                 ops::ADD => self.set_mem(c, self.get_mem(a) + self.get_mem(b)),
                 ops::MUL => self.set_mem(c, self.get_mem(a) * self.get_mem(b)),
-                ops::HALT => {
-                    println!("Program execution ended, final value at position 0: {}", self.program[0]);
-                    return
-                },
+                ops::HALT => return self.program[0],
                 _ => panic!("Invalid opcode found: {}", opcode)
             };
 
@@ -41,10 +46,14 @@ impl Computer {
         return (self.safe_vec_get(0), self.safe_vec_get(1), self.safe_vec_get(2), self.safe_vec_get(3))
     }
     
+    fn mem_safe(&self, offset: i32) -> bool {
+        self.program.len() > (offset as usize)
+    }
+
     fn safe_vec_get(&self, offset: usize) -> i32 {
         let location = self.position + offset;
 
-        if self.program.len() < location {
+        if !self.mem_safe(location as i32) {
             -1
         } else {
             self.program[location]
