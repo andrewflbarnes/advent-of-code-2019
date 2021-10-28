@@ -1,7 +1,8 @@
 use crate::utils;
 use std::convert::From;
-use std:: collections::HashMap;
-use std:: collections::HashSet;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::ops::RangeInclusive;
 
 #[derive(Debug)]
 enum Travel {
@@ -34,9 +35,8 @@ pub fn solve(input1: String, _: String, _: &[String]) {
         let wire_1 = &paths[1];
         let wire_2 = &paths[0];
 
-        let wire_1_edges = get_edges(wire_2);
-        println!("{:?}", wire_1_edges.0.get(&924));
-        let intersections = get_intersections(wire_1, wire_1_edges.0, wire_1_edges.1);
+        let wire_1_edges = get_edges(wire_1);
+        let intersections = get_intersections(wire_2, wire_1_edges.0, wire_1_edges.1);
 
         println!("Intersections {:?}", intersections);
 
@@ -70,13 +70,13 @@ fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, Ha
 
         match t {
             Travel::Right(_)|Travel::Left(_) => {
-                for i in if x > current.0 { current.0..=x } else { x..=current.0 } {
+                for i in abs_range_inclusive(x, current.0) {
                     let crossings  = verticals.entry(i).or_insert_with(|| HashSet::new());
                     crossings.insert(y);
                 }
             },
             Travel::Up(_)|Travel::Down(_) => {
-                for i in if y > current.1 { current.1..=y } else { y..=current.1 } {
+                for i in abs_range_inclusive(y, current.1) {
                     let crossings  = horizontals.entry(i).or_insert_with(|| HashSet::new());
                     crossings.insert(x);
                 }
@@ -108,7 +108,7 @@ fn get_intersections(
         match t {
             Travel::Right(_)|Travel::Left(_) => {
                 if let Some(crossings) = horizontals.get(&last_y) {
-                    (last_x..=current.0)
+                    abs_range_inclusive(last_x, current.0)
                         .filter(|x| crossings.contains(x))
                         .for_each(|x| intersections.push((x, last_y)))
 
@@ -116,7 +116,7 @@ fn get_intersections(
             },
             Travel::Up(_)|Travel::Down(_) => {
                 if let Some(crossings) = verticals.get(&last_x) {
-                    (last_y..=current.1)
+                    abs_range_inclusive(last_y, current.1)
                         .filter(|y| crossings.contains(y))
                         .for_each(|y| intersections.push((last_x, y)))
 
@@ -126,4 +126,12 @@ fn get_intersections(
     }
 
     intersections
+}
+
+fn abs_range_inclusive(i1: i32, i2: i32)-> RangeInclusive<i32> {
+    if i1 > i2 {
+        i2..=i1
+    } else {
+        i1..=i2
+    }
 }
