@@ -49,14 +49,24 @@ pub fn solve(input1: String, _: String, _: &[String]) {
                 }
             });
 
-            println!("Nearest {:?}", nearest_intersection);
+        println!("Nearest {:?}", nearest_intersection);
 }
 
 fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, HashSet<i32>>) {
+    let (h, v, ..) = get_all_edge_data(path, &vec![]);
+    (h, v)
+}
+
+fn get_all_edge_data(path: &Vec<Travel>, intersections: &Vec<(i32, i32)>) -> (
+    HashMap<i32, HashSet<i32>>,
+    HashMap<i32, HashSet<i32>>,
+    HashMap<(i32, i32), i32>
+) {
 
     let mut verticals: HashMap<i32, HashSet<i32>> =  HashMap::new();
     let mut horizontals: HashMap<i32, HashSet<i32>> =  HashMap::new();
     let mut current = (0i32, 0i32);
+    let mut time_distances = HashMap::new();
 
     for t in path {
         let (x, y) = current;
@@ -78,7 +88,7 @@ fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, Ha
         }
     }
 
-    return (horizontals, verticals);
+    return (horizontals, verticals, time_distances);
 }
 
 fn update_crossings(at: i32, track: &mut HashMap<i32, HashSet<i32>>, from: i32, to: i32) {
