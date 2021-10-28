@@ -1,5 +1,7 @@
 use crate::utils;
 use std::convert::From;
+use std:: collections::HashMap;
+use std:: collections::HashSet;
 
 #[derive(Debug)]
 enum Travel {
@@ -28,6 +30,100 @@ pub fn solve(input1: String, _: String, _: &[String]) {
         .into_iter()
         .map(|l| l.split(",").map(|d| d.into()).collect())
         .collect();
-    
-        println!("{:?}", paths)
+
+        let wire_1 = &paths[1];
+        let wire_2 = &paths[0];
+
+        let wire_1_edges = get_edges(wire_2);
+        println!("{:?}", wire_1_edges.0.get(&924));
+        let intersections = get_intersections(wire_1, wire_1_edges.0, wire_1_edges.1);
+
+        println!("Intersections {:?}", intersections);
+
+        let nearest_intersection = intersections.into_iter()
+            .reduce(|last, next| {
+                if last.0.abs() + last.1.abs() < next.0.abs() + next.1.abs() {
+                    last
+                } else {
+                    next
+                }
+            });
+
+            println!("Nearest {:?}", nearest_intersection);
+}
+
+fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, HashSet<i32>>) {
+
+    let mut verticals: HashMap<i32, HashSet<i32>> =  HashMap::new();
+    let mut horizontals: HashMap<i32, HashSet<i32>> =  HashMap::new();
+    let mut current = (0i32, 0i32);
+
+    for t in path {
+        let (x, y) = current;
+
+        match t {
+            Travel::Right(d) => current.0 += *d as i32,
+            Travel::Left(d) => current.0 -= *d as i32,
+            Travel::Up(d) => current.1 += *d as i32,
+            Travel::Down(d) => current.1 -= *d as i32,
+        }
+
+        match t {
+            Travel::Right(_)|Travel::Left(_) => {
+                for i in if x > current.0 { current.0..=x } else { x..=current.0 } {
+                    let crossings  = verticals.entry(i).or_insert_with(|| HashSet::new());
+                    crossings.insert(y);
+                }
+            },
+            Travel::Up(_)|Travel::Down(_) => {
+                for i in if y > current.1 { current.1..=y } else { y..=current.1 } {
+                    let crossings  = horizontals.entry(i).or_insert_with(|| HashSet::new());
+                    crossings.insert(x);
+                }
+            },
+        }
+    }
+
+    return (horizontals, verticals);
+}
+
+fn get_intersections(
+    path: &Vec<Travel>,
+    horizontals: HashMap<i32, HashSet<i32>>,
+    verticals:HashMap<i32, HashSet<i32>>
+) -> Vec<(i32, i32)> {
+    let mut intersections = vec![];
+    let mut current = (0i32, 0i32);
+
+    for t in path {
+        let (last_x, last_y) = current;
+
+        match t {
+            Travel::Right(d) => current.0 += *d as i32,
+            Travel::Left(d) => current.0 -= *d as i32,
+            Travel::Up(d) => current.1 += *d as i32,
+            Travel::Down(d) => current.1 -= *d as i32,
+        }
+
+        match t {
+            Travel::Right(_)|Travel::Left(_) => {
+                if let Some(crossings) = horizontals.get(&last_y) {
+                    (last_x..=current.0)
+                        .filter(|x| crossings.contains(x))
+                        .for_each(|x| intersections.push((x, last_y)))
+
+                }
+            },
+            Travel::Up(_)|Travel::Down(_) => {
+                if let Some(crossings) = verticals.get(&last_x) {
+                    (last_y..=current.1)
+                        .filter(|y| crossings.contains(y))
+                        .for_each(|y| intersections.push((last_x, y)))
+
+                }
+            },
+        }
+    }
+
+    intersections
 }
