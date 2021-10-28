@@ -70,21 +70,22 @@ fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, Ha
 
         match t {
             Travel::Right(_)|Travel::Left(_) => {
-                for i in abs_range_inclusive(x, current.0) {
-                    let crossings  = verticals.entry(i).or_insert_with(|| HashSet::new());
-                    crossings.insert(y);
-                }
+                update_crossings(y, &mut verticals, x + 1, current.0 - 1);
             },
             Travel::Up(_)|Travel::Down(_) => {
-                for i in abs_range_inclusive(y, current.1) {
-                    let crossings  = horizontals.entry(i).or_insert_with(|| HashSet::new());
-                    crossings.insert(x);
-                }
+                update_crossings(x, &mut horizontals, y + 1, current.1 - 1);
             },
         }
     }
 
     return (horizontals, verticals);
+}
+
+fn update_crossings(at: i32, track: &mut HashMap<i32, HashSet<i32>>, from: i32, to: i32) {
+    for i in abs_range_inclusive(from, to) {
+        let crossings  = track.entry(i).or_insert_with(|| HashSet::new());
+        crossings.insert(at);
+    }
 }
 
 fn get_intersections(
