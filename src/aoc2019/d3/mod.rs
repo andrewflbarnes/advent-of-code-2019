@@ -40,7 +40,7 @@ pub fn solve(input1: String, _: String, _: &[String]) {
 
         println!("Intersections {:?}", intersections);
 
-        let nearest_intersection = intersections.into_iter()
+        let nearest_intersection = intersections.iter()
             .reduce(|last, next| {
                 if last.0.abs() + last.1.abs() < next.0.abs() + next.1.abs() {
                     last
@@ -50,11 +50,24 @@ pub fn solve(input1: String, _: String, _: &[String]) {
             });
 
         println!("Nearest {:?}", nearest_intersection);
+
+        let it = get_time_distances(wire_1, &intersections);
+        let it2 = get_time_distances(wire_2, &intersections);
+
+        it.iter()
+            .for_each(|(pos, distance)| {
+                println!("Total distance to {:?}: {}", pos, it2.get(pos).unwrap() + distance);
+            });
 }
 
 fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, HashSet<i32>>) {
     let (h, v, ..) = get_all_edge_data(path, &vec![]);
     (h, v)
+}
+
+fn get_time_distances(path: &Vec<Travel>, intersections: &Vec<(i32, i32)>) -> HashMap<(i32, i32), i32> {
+    let (_, _, time_distances) = get_all_edge_data(path, intersections);
+    time_distances
 }
 
 fn get_all_edge_data(path: &Vec<Travel>, intersections: &Vec<(i32, i32)>) -> (
@@ -66,6 +79,7 @@ fn get_all_edge_data(path: &Vec<Travel>, intersections: &Vec<(i32, i32)>) -> (
     let mut verticals: HashMap<i32, HashSet<i32>> =  HashMap::new();
     let mut horizontals: HashMap<i32, HashSet<i32>> =  HashMap::new();
     let mut current = (0i32, 0i32);
+    let mut distance = 0;
     let mut time_distances = HashMap::new();
 
     for t in path {
@@ -80,21 +94,45 @@ fn get_all_edge_data(path: &Vec<Travel>, intersections: &Vec<(i32, i32)>) -> (
 
         match t {
             Travel::Right(_)|Travel::Left(_) => {
-                update_crossings(y, &mut verticals, x + 1, current.0 - 1);
+                update_crossings(y, &mut verticals, x + 1, current.0 - 1, |path_distance: i32, on: i32| {
+                    let pos = (on, y);
+                    if on == -1435 && y == 2474 {
+                        println!("FOUND! {} + {}", distance, path_distance);
+                    }
+                    if intersections.contains(&pos) {
+                        time_distances.entry(pos).or_insert(distance + path_distance);
+                        println!("Found intersection after {} at {:?}", distance + path_distance, (on, y));
+                    }
+                });
             },
             Travel::Up(_)|Travel::Down(_) => {
-                update_crossings(x, &mut horizontals, y + 1, current.1 - 1);
+                update_crossings(x, &mut horizontals, y + 1, current.1 - 1, |path_distance: i32, on: i32| {
+                    let pos = (x, on);
+                    if x == -1435 && on == 2474 {
+                        println!("FOUND! {} + {}", distance, path_distance);
+                    }
+                    if intersections.contains(&pos) {
+                        time_distances.entry(pos).or_insert(distance + path_distance);
+                        println!("Found intersection after {} at {:?}", distance + path_distance, (x, on));
+                    }
+                });
             },
         }
+
+        distance += (x - current.0).abs() + (y - current.1).abs();
     }
 
     return (horizontals, verticals, time_distances);
 }
 
-fn update_crossings(at: i32, track: &mut HashMap<i32, HashSet<i32>>, from: i32, to: i32) {
+fn update_crossings<F: FnMut(i32, i32)>(at: i32, track: &mut HashMap<i32, HashSet<i32>>, from: i32, to: i32,
+    mut check_each: F) {
+
     for i in abs_range_inclusive(from, to) {
-        let crossings  = track.entry(i).or_insert_with(|| HashSet::new());
-        crossings.insert(at);
+        track.entry(i)
+            .or_insert_with(|| HashSet::new())
+            .insert(at);
+        check_each((from.max(to) - i).abs(), i);
     }
 }
 
