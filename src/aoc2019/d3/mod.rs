@@ -32,11 +32,11 @@ pub fn solve(input1: String, _: String, _: &[String]) {
         .map(|l| l.split(",").map(|d| d.into()).collect())
         .collect();
 
-    let wire_1 = &paths[1];
-    let wire_2 = &paths[0];
+    let path_1 = &paths[1];
+    let path_2 = &paths[0];
 
-    let wire_1_edges = get_edges(wire_1);
-    let intersections = get_intersections(wire_2, wire_1_edges.0, wire_1_edges.1);
+    let path_1_edges = get_edges(path_1);
+    let intersections = get_intersections(path_2, path_1_edges.0, path_1_edges.1);
 
     println!("Intersections {:?}", intersections);
 
@@ -57,8 +57,8 @@ pub fn solve(input1: String, _: String, _: &[String]) {
         nearest_intersection.0.abs() + nearest_intersection.1.abs()
     );
 
-    let it = get_time_distances(wire_1, &intersections);
-    let it2 = get_time_distances(wire_2, &intersections);
+    let it = get_time_distances(path_1, &intersections);
+    let it2 = get_time_distances(path_2, &intersections);
 
     let fastest_intersection = it
         .iter()
@@ -70,6 +70,16 @@ pub fn solve(input1: String, _: String, _: &[String]) {
         "Fastest {:?} with distance {}",
         fastest_intersection.0, fastest_intersection.1
     );
+}
+
+fn update_location(mut current: (i32, i32), t: &Travel) -> (i32, i32) {
+    match t {
+        Travel::Right(d) => current.0 += *d as i32,
+        Travel::Left(d) => current.0 -= *d as i32,
+        Travel::Up(d) => current.1 += *d as i32,
+        Travel::Down(d) => current.1 -= *d as i32,
+    }
+    current
 }
 
 fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, HashSet<i32>>) {
@@ -108,12 +118,7 @@ fn get_all_edge_data(
     for t in path {
         let (x, y) = current;
 
-        match t {
-            Travel::Right(d) => current.0 += *d as i32,
-            Travel::Left(d) => current.0 -= *d as i32,
-            Travel::Up(d) => current.1 += *d as i32,
-            Travel::Down(d) => current.1 -= *d as i32,
-        }
+        current = update_location(current, t);
 
         let mut check_each = |path_distance: i32, pos: (i32, i32)| {
             return check_each_total_distance(distance + path_distance, pos);
@@ -172,12 +177,7 @@ fn get_intersections(
     for t in path {
         let (last_x, last_y) = current;
 
-        match t {
-            Travel::Right(d) => current.0 += *d as i32,
-            Travel::Left(d) => current.0 -= *d as i32,
-            Travel::Up(d) => current.1 += *d as i32,
-            Travel::Down(d) => current.1 -= *d as i32,
-        }
+        current = update_location(current, t);
 
         match t {
             Travel::Right(_) | Travel::Left(_) => {
