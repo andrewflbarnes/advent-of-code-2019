@@ -20,7 +20,6 @@ fn main() {
     } else {
         println!("No solution for day {}", day);
     }
-
 }
 
 fn get_solution(day: u8) -> Option<fn(String, String, &[String])> {
