@@ -1,6 +1,5 @@
 use crate::utils;
-mod vm;
-use vm::Computer;
+use crate::vm::Computer;
 
 pub fn solve(input1: String, _: String, _: &[String]) {
     let program: Vec<i32> = utils::read_file_lines(&input1)
