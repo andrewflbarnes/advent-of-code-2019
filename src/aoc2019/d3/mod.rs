@@ -156,6 +156,7 @@ fn update_crossings<F: FnMut(i32, (i32, i32)), P: Fn(i32) -> (i32, i32)>(
 ) {
     let mut path_distance = 0;
     let mut range = abs_range_inclusive(from, to).skip(1).peekable();
+    // don't care about the corners so skip the first and last in the range
     while let Some(i) = range.next() {
         if range.peek().is_none() {
             break;
@@ -179,21 +180,30 @@ fn get_intersections(
 
         current = update_location(current, t);
 
-        match t {
-            Travel::Right(_) | Travel::Left(_) => {
-                if let Some(crossings) = horizontals.get(&last_y) {
-                    abs_range_inclusive(last_x, current.0)
-                        .filter(|x| crossings.contains(x))
-                        .for_each(|x| intersections.push((x, last_y)))
-                }
-            }
-            Travel::Up(_) | Travel::Down(_) => {
-                if let Some(crossings) = verticals.get(&last_x) {
-                    abs_range_inclusive(last_y, current.1)
-                        .filter(|y| crossings.contains(y))
-                        .for_each(|y| intersections.push((last_x, y)))
-                }
-            }
+        let (crossings, from, to, for_each): (
+            Option<&HashSet<i32>>,
+            i32,
+            i32,
+            Box<dyn FnMut(i32)>,
+        ) = match t {
+            Travel::Right(_) | Travel::Left(_) => (
+                horizontals.get(&last_y),
+                last_x,
+                current.0,
+                Box::new(|x| intersections.push((x, last_y))),
+            ),
+            Travel::Up(_) | Travel::Down(_) => (
+                verticals.get(&last_x),
+                last_y,
+                current.1,
+                Box::new(|y| intersections.push((last_x, y))),
+            ),
+        };
+
+        if let Some(crossings) = crossings {
+            abs_range_inclusive(from, to)
+                .filter(|i| crossings.contains(i))
+                .for_each(for_each);
         }
     }
 
