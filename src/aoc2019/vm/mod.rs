@@ -1,3 +1,13 @@
+use crate::utils;
+
+pub fn read_program(input: String) -> Vec<i32> {
+    utils::read_file_lines(&input)
+        .into_iter()
+        .flat_map(|l| l.split(",").map(str::to_owned).collect::<Vec<_>>())
+        .filter_map(|i| i.to_owned().parse::<i32>().ok())
+        .collect::<Vec<_>>()
+}
+
 mod ops {
     pub const ADD: i32 = 1;
     pub const MUL: i32 = 2;

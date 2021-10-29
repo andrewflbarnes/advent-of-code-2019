@@ -1,12 +1,8 @@
-use crate::utils;
+use crate::vm;
 use crate::vm::Computer;
 
 pub fn solve(input1: String, _: String, _: &[String]) {
-    let program: Vec<i32> = utils::read_file_lines(&input1)
-        .into_iter()
-        .flat_map(|l| l.split(",").map(str::to_owned).collect::<Vec<_>>())
-        .filter_map(|i| i.to_owned().parse::<i32>().ok())
-        .collect();
+    let program: Vec<i32> = vm::read_program(input1);
 
     let part1 = run_with(&program, (12, 2));
     println!("Program execution ended with result: {}", part1);

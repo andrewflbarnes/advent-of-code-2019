@@ -28,6 +28,7 @@ fn get_solution(day: u8) -> Option<fn(String, String, &[String])> {
         2 => solutions::d2,
         3 => solutions::d3,
         4 => solutions::d4,
+        5 => solutions::d5,
         _ => return None,
     };
 
