@@ -99,6 +99,12 @@ fn get_all_edge_data(
     let mut distance = 0;
     let mut time_distances = HashMap::new();
 
+    let mut check_each_total_distance = |path_distance: i32, pos: (i32, i32)| {
+        if intersections.contains(&pos) {
+            time_distances.entry(pos).or_insert_with(|| path_distance);
+        }
+    };
+
     for t in path {
         let (x, y) = current;
 
@@ -109,20 +115,23 @@ fn get_all_edge_data(
             Travel::Down(d) => current.1 -= *d as i32,
         }
 
-        let check_each = |path_distance: i32, pos: (i32, i32)| {
-            if intersections.contains(&pos) {
-                time_distances
-                    .entry(pos)
-                    .or_insert_with(|| distance + path_distance);
-            }
+        let mut check_each = |path_distance: i32, pos: (i32, i32)| {
+            return check_each_total_distance(distance + path_distance, pos);
         };
 
         match t {
             Travel::Right(_) | Travel::Left(_) => {
-                update_crossings(y, &mut verticals, x, current.0, |i| (i, y), check_each);
+                update_crossings(y, &mut verticals, x, current.0, |i| (i, y), &mut check_each);
             }
             Travel::Up(_) | Travel::Down(_) => {
-                update_crossings(x, &mut horizontals, y, current.1, |i| (x, i), check_each);
+                update_crossings(
+                    x,
+                    &mut horizontals,
+                    y,
+                    current.1,
+                    |i| (x, i),
+                    &mut check_each,
+                );
             }
         }
 
@@ -138,7 +147,7 @@ fn update_crossings<F: FnMut(i32, (i32, i32)), P: Fn(i32) -> (i32, i32)>(
     from: i32,
     to: i32,
     to_pos: P,
-    mut check_each: F,
+    check_each: &mut F,
 ) {
     let mut path_distance = 0;
     let mut range = abs_range_inclusive(from, to).skip(1).peekable();
