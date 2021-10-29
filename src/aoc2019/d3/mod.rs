@@ -26,6 +26,8 @@ impl From<&str> for Travel {
     }
 }
 
+type Tracker = HashSet<(i32, i32)>;
+
 pub fn solve(input1: String, _: String, _: &[String]) {
     let paths: Vec<Vec<Travel>> = utils::read_file_lines(&input1)
         .into_iter()
@@ -36,7 +38,7 @@ pub fn solve(input1: String, _: String, _: &[String]) {
     let path_2 = &paths[0];
 
     let path_1_edges = get_edges(path_1);
-    let intersections = get_intersections(path_2, path_1_edges.0, path_1_edges.1);
+    let intersections = get_intersections(path_2, path_1_edges);
 
     println!("Intersections {:?}", intersections);
 
@@ -82,7 +84,7 @@ fn update_location(mut current: (i32, i32), t: &Travel) -> (i32, i32) {
     current
 }
 
-fn get_edges(path: &Vec<Travel>) -> (HashMap<i32, HashSet<i32>>, HashMap<i32, HashSet<i32>>) {
+fn get_edges(path: &Vec<Travel>) -> (Tracker, Tracker) {
     let (h, v, ..) = get_all_edge_data(path, &vec![]);
     (h, v)
 }
@@ -98,13 +100,9 @@ fn get_time_distances(
 fn get_all_edge_data(
     path: &Vec<Travel>,
     intersections: &Vec<(i32, i32)>,
-) -> (
-    HashMap<i32, HashSet<i32>>,
-    HashMap<i32, HashSet<i32>>,
-    HashMap<(i32, i32), i32>,
-) {
-    let mut verticals: HashMap<i32, HashSet<i32>> = HashMap::new();
-    let mut horizontals: HashMap<i32, HashSet<i32>> = HashMap::new();
+) -> (Tracker, Tracker, HashMap<(i32, i32), i32>) {
+    let mut verticals: Tracker = HashSet::new();
+    let mut horizontals: Tracker = HashSet::new();
     let mut current = (0i32, 0i32);
     let mut distance = 0;
     let mut time_distances = HashMap::new();
@@ -126,17 +124,10 @@ fn get_all_edge_data(
 
         match t {
             Travel::Right(_) | Travel::Left(_) => {
-                update_crossings(y, &mut verticals, x, current.0, |i| (i, y), &mut check_each);
+                update_crossings(&mut verticals, x, current.0, |i| (i, y), &mut check_each);
             }
             Travel::Up(_) | Travel::Down(_) => {
-                update_crossings(
-                    x,
-                    &mut horizontals,
-                    y,
-                    current.1,
-                    |i| (x, i),
-                    &mut check_each,
-                );
+                update_crossings(&mut horizontals, y, current.1, |i| (x, i), &mut check_each);
             }
         }
 
@@ -147,8 +138,7 @@ fn get_all_edge_data(
 }
 
 fn update_crossings<F: FnMut(i32, (i32, i32)), P: Fn(i32) -> (i32, i32)>(
-    at: i32,
-    track: &mut HashMap<i32, HashSet<i32>>,
+    track: &mut Tracker,
     from: i32,
     to: i32,
     to_pos: P,
@@ -158,20 +148,18 @@ fn update_crossings<F: FnMut(i32, (i32, i32)), P: Fn(i32) -> (i32, i32)>(
     let mut range = abs_range_inclusive(from, to).skip(1).peekable();
     // don't care about the corners so skip the first and last in the range
     while let Some(i) = range.next() {
+        let pos = to_pos(i);
         if range.peek().is_none() {
             break;
         }
         path_distance += 1;
-        track.entry(i).or_insert_with(|| HashSet::new()).insert(at);
-        check_each(path_distance, to_pos(i));
+        track.insert(pos);
+        check_each(path_distance, pos);
     }
 }
 
-fn get_intersections(
-    path: &Vec<Travel>,
-    horizontals: HashMap<i32, HashSet<i32>>,
-    verticals: HashMap<i32, HashSet<i32>>,
-) -> Vec<(i32, i32)> {
+fn get_intersections(path: &Vec<Travel>, trackers: (Tracker, Tracker)) -> Vec<(i32, i32)> {
+    let (horizontals, verticals) = trackers;
     let mut intersections = vec![];
     let mut current = (0i32, 0i32);
 
@@ -180,31 +168,24 @@ fn get_intersections(
 
         current = update_location(current, t);
 
-        let (crossings, from, to, for_each): (
-            Option<&HashSet<i32>>,
-            i32,
-            i32,
-            Box<dyn FnMut(i32)>,
-        ) = match t {
-            Travel::Right(_) | Travel::Left(_) => (
-                horizontals.get(&last_y),
-                last_x,
-                current.0,
-                Box::new(|x| intersections.push((x, last_y))),
-            ),
-            Travel::Up(_) | Travel::Down(_) => (
-                verticals.get(&last_x),
-                last_y,
-                current.1,
-                Box::new(|y| intersections.push((last_x, y))),
-            ),
-        };
+        let (crossings, from, to, to_pos): (&Tracker, i32, i32, Box<dyn Fn(i32) -> (i32, i32)>) =
+            match t {
+                Travel::Right(_) | Travel::Left(_) => {
+                    (&horizontals, last_x, current.0, Box::new(|x| (x, last_y)))
+                }
+                Travel::Up(_) | Travel::Down(_) => {
+                    (&verticals, last_y, current.1, Box::new(|y| (last_x, y)))
+                }
+            };
 
-        if let Some(crossings) = crossings {
-            abs_range_inclusive(from, to)
-                .filter(|i| crossings.contains(i))
-                .for_each(for_each);
-        }
+        abs_range_inclusive(from, to)
+            .map(to_pos)
+            .filter(|pos| crossings.contains(pos))
+            .for_each(|pos| {
+                if !intersections.contains(&pos) {
+                    intersections.push(pos);
+                }
+            });
     }
 
     intersections
